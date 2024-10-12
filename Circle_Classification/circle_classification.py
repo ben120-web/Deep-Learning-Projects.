@@ -190,3 +190,174 @@ else:
 
 from helper_functions import plot_predictions, plot_decision_boundary
 
+## Plot the decision boundaries for training and test.
+plt.figure(figsize=(12, 6))
+plt.subplot(1, 2, 1)
+plt.title("Train")
+plot_decision_boundary(model_0, X_train, y_train)
+plt.subplot(1, 2, 2)
+plt.title("Test")
+plot_decision_boundary(model_0, X_test, y_test)
+
+# Can see the model is linear. (Hence underfits)
+
+## Imporve model with the following options:
+# 1. Add more layers - Increase learning capability.
+# 2. Add more neurons - Same as above.
+# Fit for longer (Increase epochs)
+# Change activation function - using non-linear
+# Change the learning rate.
+# Change the loss function.
+# Use transfer learning.
+
+# Lets update the model to V1
+class CircleModelV1(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer_1 = nn.Linear(in_features=2, out_features=10)
+        self.layer_2 = nn.Linear(in_features=10, out_features=10) # extra layer
+        self.layer_3 = nn.Linear(in_features=10, out_features=1)
+        
+    def forward(self, x): 
+        # Creating a model like this is the same as below, though below
+        # generally benefits from speedups where possible.
+        # z = self.layer_1(x)
+        # z = self.layer_2(z)
+        # z = self.layer_3(z)
+        # return z
+        return self.layer_3(self.layer_2(self.layer_1(x)))
+
+model_1 = CircleModelV1().to(device)
+model_1
+    
+# Loss and optimizer.
+loss_fn = nn.BCEWithLogitsLoss() # Does not require sigmoid on input
+optimizer = torch.optim.SGD(model_1.parameters(), lr=0.1)
+
+
+##### Train the new model.
+torch.manual_seed(42)
+
+epochs = 1000 # Train for longer
+
+# Put data to target device
+X_train, y_train = X_train.to(device), y_train.to(device)
+X_test, y_test = X_test.to(device), y_test.to(device)
+
+for epoch in range(epochs):
+    ### Training
+    # 1. Forward pass
+    y_logits = model_1(X_train).squeeze()
+    y_pred = torch.round(torch.sigmoid(y_logits)) # logits -> prediction probabilities -> prediction labels
+
+    # 2. Calculate loss/accuracy
+    loss = loss_fn(y_logits, y_train)
+    acc = accuracy_fn(y_true=y_train, 
+                      y_pred=y_pred)
+
+    # 3. Optimizer zero grad
+    optimizer.zero_grad()
+
+    # 4. Loss backwards
+    loss.backward()
+
+    # 5. Optimizer step
+    optimizer.step()
+
+    ### Testing
+    model_1.eval()
+    with torch.inference_mode():
+        # 1. Forward pass
+        test_logits = model_1(X_test).squeeze() 
+        test_pred = torch.round(torch.sigmoid(test_logits))
+        # 2. Caculate loss/accuracy
+        test_loss = loss_fn(test_logits,
+                            y_test)
+        test_acc = accuracy_fn(y_true=y_test,
+                               y_pred=test_pred)
+
+    # Print out what's happening every 10 epochs
+    if epoch % 100 == 0:
+        print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
+
+# Still a linear model, we need to add non-linearity.
+
+# Build model with non-linear activation function
+class CircleModelV2(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer_1 = nn.Linear(in_features=2, out_features=10)
+        self.layer_2 = nn.Linear(in_features=10, out_features=10)
+        self.layer_3 = nn.Linear(in_features=10, out_features=1)
+        self.relu = nn.ReLU() # <- add in ReLU activation function
+        # Can also put sigmoid in the model 
+        # This would mean you don't need to use it on the predictions
+        # self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+      # Intersperse the ReLU activation function between layers
+       return self.layer_3(self.relu(self.layer_2(self.relu(self.layer_1(x)))))
+
+model_3 = CircleModelV2().to(device)
+print(model_3)
+
+# Setup loss and optimizer 
+loss_fn = nn.BCEWithLogitsLoss()
+optimizer = torch.optim.SGD(model_3.parameters(), lr=0.1)
+
+# Fit the model
+torch.manual_seed(42)
+epochs = 1000
+
+# Put all data on target device
+X_train, y_train = X_train.to(device), y_train.to(device)
+X_test, y_test = X_test.to(device), y_test.to(device)
+
+for epoch in range(epochs):
+    # 1. Forward pass
+    y_logits = model_3(X_train).squeeze()
+    y_pred = torch.round(torch.sigmoid(y_logits)) # logits -> prediction probabilities -> prediction labels
+    
+    # 2. Calculate loss and accuracy
+    loss = loss_fn(y_logits, y_train) # BCEWithLogitsLoss calculates loss using logits
+    acc = accuracy_fn(y_true=y_train, 
+                      y_pred=y_pred)
+    
+    # 3. Optimizer zero grad
+    optimizer.zero_grad()
+
+    # 4. Loss backward
+    loss.backward()
+
+    # 5. Optimizer step
+    optimizer.step()
+
+    ### Testing
+    model_3.eval()
+    with torch.inference_mode():
+      # 1. Forward pass
+      test_logits = model_3(X_test).squeeze()
+      test_pred = torch.round(torch.sigmoid(test_logits)) # logits -> prediction probabilities -> prediction labels
+      # 2. Calculate loss and accuracy
+      test_loss = loss_fn(test_logits, y_test)
+      test_acc = accuracy_fn(y_true=y_test,
+                             y_pred=test_pred)
+
+    # Print out what's happening
+    if epoch % 100 == 0:
+        print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test Loss: {test_loss:.5f}, Test Accuracy: {test_acc:.2f}%")
+        
+# Make predictions
+model_3.eval()
+with torch.inference_mode():
+    y_preds = torch.round(torch.sigmoid(model_3(X_test))).squeeze()
+y_preds[:10], y[:10] # want preds in same format as truth labels
+
+# Plot decision boundaries for training and test sets
+plt.figure(figsize=(12, 6))
+plt.subplot(1, 2, 1)
+plt.title("Train")
+plot_decision_boundary(model_1, X_train, y_train) # model_1 = no non-linearity
+plt.subplot(1, 2, 2)
+plt.title("Test")
+plot_decision_boundary(model_3, X_test, y_test) # model_3 = has non-linearity
