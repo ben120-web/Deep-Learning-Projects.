@@ -111,4 +111,3 @@ plt.title(class_names[label])
 plt.axis("Off");
 print(f"Image size: {img.shape}")
 print(f"Label: {label}, label size: {label.shape}")
-
