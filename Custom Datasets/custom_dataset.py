@@ -35,5 +35,67 @@ else:
         print("Unzipping pizza, steak, sushi data...")
         zip_ref.extractall(image_path)
         
-        
-        
+## Data Preparation
+import os
+def walk_through_dir(dir_path):
+    
+    """
+  Walks through dir_path returning its contents.
+  Args:
+    dir_path (str or pathlib.Path): target directory
+  
+  Returns:
+    A print out of:
+      number of subdiretories in dir_path
+      number of images (files) in each subdirectory
+      name of each subdirectory
+    """
+    for dirpath, dirnames, filenames in os.walk(dir_path):
+        print(f"There are {len(dirnames)} directories and {len(filenames)} images in '{dirpath}'.")
+
+walk_through_dir(image_path)
+
+
+# Setup train and testing paths
+train_dir = image_path / "train"
+test_dir = image_path / "test"
+
+train_dir, test_dir
+
+
+# Lets visualise an image.
+import random
+from PIL import Image
+
+# Set Seed
+random.seed(42)
+
+# 1. Get all image paths (* means "any combinations")
+image_path_list = list(image_path.glob("*/*/*.jpg"))
+
+# 2. Get random image path
+random_image_path = random.choice(image_path_list)
+
+# 3. Get image class from path name (The image class is the name of the directory where the image is stored)
+image_class = random_image_path.parent.stem
+
+# Open image
+img = Image.open(random_image_path)
+
+# Print Metadata
+print(f"Random Image path: {random_image_path}")
+print(f"Image class: {image_class}")
+print(f"Image height: {img.height}")
+print(f"Image width: {img.width}")
+img
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Turn the image into an array.
+img_as_array = np.asarray(img)
+
+# Plot the image with matplotlib
+plt.figure(figsize = (10, 7))
+plt.imshow(img_as_array)
+plt.title(f"Image class: {image_class} | Image shape": {img_as_array.shape} -> [height, width, color_channels]")
