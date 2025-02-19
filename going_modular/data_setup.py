@@ -2,8 +2,8 @@
 Contains functionality for creating PyTorch DataLoaders for 
 image classification data.
 """
-
 import os
+
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
@@ -57,7 +57,7 @@ def create_dataloaders(
   test_dataloader = DataLoader(
       test_data,
       batch_size=batch_size,
-      shuffle=False, # don't need to shuffle test data
+      shuffle=False,
       num_workers=num_workers,
       pin_memory=True,
   )
